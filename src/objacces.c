@@ -109,7 +109,7 @@ UNS32 _getODentry( CO_Data* d,
     const CONSTSTORE indextable *ptrTable;
     ODCallback_t *Callback;
 
-    ptrTable = (*d->scanIndexOD)(wIndex, &errorCode, &Callback);
+    ptrTable = (*d->scanIndexOD)(d, wIndex, &errorCode, &Callback);
 
     if (errorCode != OD_SUCCESSFUL)
         return errorCode;
@@ -212,7 +212,7 @@ UNS32 _setODentry( CO_Data* d,
     const CONSTSTORE indextable *ptrTable;
     ODCallback_t *Callback;
 
-    ptrTable =(*d->scanIndexOD)(wIndex, &errorCode, &Callback);
+    ptrTable =(*d->scanIndexOD)(d, wIndex, &errorCode, &Callback);
     if (errorCode != OD_SUCCESSFUL)
         return errorCode;
 
@@ -256,7 +256,7 @@ UNS32 _setODentry( CO_Data* d,
             }
         }
 #endif
-        errorCode = (*d->valueRangeTest)(dataType, pSourceData);
+        errorCode = (*d->valueRangeTest)(d, dataType, pSourceData);
         if (errorCode) {
             accessDictionaryError(wIndex, bSubindex, szData, *pExpectedSize, errorCode);
             return errorCode;
@@ -301,7 +301,7 @@ UNS32 _setODentry( CO_Data* d,
 
 const CONSTSTORE indextable * scanIndexOD (CO_Data* d, UNS16 wIndex, UNS32 *errorCode, ODCallback_t **Callback)
 {
-    return (*d->scanIndexOD)(wIndex, errorCode, Callback);
+    return (*d->scanIndexOD)(d, wIndex, errorCode, Callback);
 }
 
 UNS32 RegisterSetODentryCallBack(CO_Data* d, UNS16 wIndex, UNS8 bSubindex, ODCallback_t Callback)

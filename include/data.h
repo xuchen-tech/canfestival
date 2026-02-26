@@ -104,7 +104,8 @@ struct struct_CO_Data {
     
     /* General */
     UNS8 toggle;
-    CAN_PORT canHandle;    
+    CAN_PORT canHandle;
+    void* user_ctx;
     scanIndexOD_t scanIndexOD;
     storeODSubIndex_t storeODSubIndex; 
     
@@ -312,6 +313,7 @@ struct struct_CO_Data {
     /* General */\
     0,                                         /* toggle */\
     NULL,                                      /* canSend */\
+    NULL,                                      /* user_ctx */\
     NODE_PREFIX ## _scanIndexOD,               /* scanIndexOD */\
     _storeODSubIndex,                          /* storeODSubIndex */\
     /* DCF concise */\

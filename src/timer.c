@@ -121,7 +121,6 @@ TIMER_HANDLE DelAlarm(TIMER_HANDLE handle)
 ** ------  TimeDispatch is called on each timer expiration ----
 **
 **/
-int tdcount=0;
 void TimeDispatch(void)
 {
     TIMER_HANDLE i;

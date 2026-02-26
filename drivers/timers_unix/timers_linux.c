@@ -16,11 +16,55 @@ static struct timeval last_sig;
 static int iTimerFD = -1;
 
 static pthread_t iTimeThrId;
+static int iTimerUsers = 0;
+static int iTimerThreadRunning = 0;
+static int iTimerThreadStop = 0;
 
 
 void TimerCleanup(void)
 {
-    /* only used in realtime apps */
+    int timerfd_to_close = -1;
+    int need_join = 0;
+
+    EnterMutex();
+
+    if (iTimerUsers <= 0)
+    {
+        LeaveMutex();
+        return;
+    }
+
+    iTimerUsers--;
+    if (iTimerUsers > 0)
+    {
+        LeaveMutex();
+        return;
+    }
+
+    iTimerThreadStop = 1;
+    timerfd_to_close = iTimerFD;
+    iTimerFD = -1;
+    need_join = iTimerThreadRunning;
+
+    LeaveMutex();
+
+    if (timerfd_to_close != -1)
+    {
+        close(timerfd_to_close);
+    }
+
+    if (need_join)
+    {
+        if(pthread_join(iTimeThrId, NULL))
+        {
+            perror("pthread_join()");
+        }
+    }
+
+    EnterMutex();
+    iTimerThreadRunning = 0;
+    iTimerThreadStop = 0;
+    LeaveMutex();
 }
 
 void EnterMutex(void)
@@ -42,11 +86,23 @@ void LeaveMutex(void)
 
 void* timer_notify_thr(void* arg)
 {
+    (void)arg;
     while (1)
     {
+        int timerfd = iTimerFD;
+        if (timerfd < 0)
+        {
+            if (iTimerThreadStop)
+            {
+                break;
+            }
+            usleep(1000);
+            continue;
+        }
+
         uint64_t exp = 0;
         
-        int ret = read(iTimerFD, &exp, sizeof(uint64_t));
+        int ret = read(timerfd, &exp, sizeof(uint64_t));
         
         if (ret == sizeof(uint64_t))
         {
@@ -59,12 +115,25 @@ void* timer_notify_thr(void* arg)
             TimeDispatch();
             LeaveMutex();
         }
+        else if (ret < 0 && iTimerThreadStop)
+        {
+            break;
+        }
     }
+
+    return NULL;
 }
 
 
 void TimerInit(void)
 {
+    EnterMutex();
+    if (++iTimerUsers > 1)
+    {
+        LeaveMutex();
+        return;
+    }
+
     // Take first absolute time ref.
     if(gettimeofday(&last_sig, NULL))
     {
@@ -76,6 +145,9 @@ void TimerInit(void)
     if (iTimerFD == -1)
     {
         perror("timer_create()");
+        iTimerUsers = 0;
+        LeaveMutex();
+        return;
     }
 
     struct itimerspec itime;
@@ -92,7 +164,16 @@ void TimerInit(void)
     if(pthread_create(&iTimeThrId, NULL, timer_notify_thr, NULL))
     {
         perror("pthread_create()");
+        close(iTimerFD);
+        iTimerFD = -1;
+        iTimerUsers = 0;
+        LeaveMutex();
+        return;
     }
+
+    iTimerThreadRunning = 1;
+    iTimerThreadStop = 0;
+    LeaveMutex();
 }
 
 void StopTimerLoop(TimerCallback_t exitfunction)
@@ -109,11 +190,10 @@ void StopTimerLoop(TimerCallback_t exitfunction)
     {
         perror("timerfd_settime()");
     }
-    close(iTimerFD);
-    
-    iTimerFD = -1;
-
-    exitfunction(NULL,0);
+    if(exitfunction)
+    {
+        exitfunction(NULL,0);
+    }
     LeaveMutex();
 }
 
@@ -128,8 +208,10 @@ void StartTimerLoop(TimerCallback_t init_callback)
 void canReceiveLoop_signal(int sig)
 {
 }
-/* We assume that ReceiveLoop_task_proc is always the same */
-static void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT) = NULL;
+typedef struct {
+    CAN_PORT port;
+    void (*receive_proc)(CAN_PORT);
+} s_receive_task_ctx;
 
 /**
  * Enter in realtime and start the CAN receiver loop
@@ -137,21 +219,37 @@ static void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT) = NULL;
  */
 void* unixtimer_canReceiveLoop(void* port)
 {
-    /*get signal*/
-      //  if(signal(SIGTERM, canReceiveLoop_signal) == SIG_ERR) {
-    //        perror("signal()");
-    //}
-    unixtimer_ReceiveLoop_task_proc((CAN_PORT)port);
+    s_receive_task_ctx* ctx = (s_receive_task_ctx*)port;
+
+    if(ctx && ctx->receive_proc)
+    {
+        ctx->receive_proc(ctx->port);
+    }
+
+    if(ctx)
+    {
+        free(ctx);
+    }
 
     return NULL;
 }
 
 void CreateReceiveTask(CAN_PORT port, TASK_HANDLE* Thread, void* ReceiveLoopPtr)
 {
-    unixtimer_ReceiveLoop_task_proc = ReceiveLoopPtr;
-    if(pthread_create(Thread, NULL, unixtimer_canReceiveLoop, (void*)port))
+    s_receive_task_ctx* ctx = (s_receive_task_ctx*)malloc(sizeof(s_receive_task_ctx));
+    if(!ctx)
+    {
+        perror("malloc()");
+        return;
+    }
+
+    ctx->port = port;
+    ctx->receive_proc = (void (*)(CAN_PORT))ReceiveLoopPtr;
+
+    if(pthread_create(Thread, NULL, unixtimer_canReceiveLoop, (void*)ctx))
     {
         perror("pthread_create()");
+        free(ctx);
     }
 }
 
@@ -172,6 +270,10 @@ void WaitReceiveTaskEnd(TASK_HANDLE *Thread)
 void setTimer(TIMEVAL value)
 {
 //    printf("setTimer(TIMEVAL value=%d)\n", value);
+    if (iTimerFD < 0)
+    {
+        return;
+    }
     // TIMEVAL is us whereas setitimer wants ns...
     long tv_nsec = 1000 * (maxval(value,1)%1000000);
     time_t tv_sec = value/1000000;

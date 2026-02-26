@@ -48,7 +48,7 @@ extern "C" {
 #endif
 
 
-typedef UNS32 (*valueRangeTest_t)(UNS8 typeValue, void *Value);
+typedef UNS32 (*valueRangeTest_t)(CO_Data* d, UNS8 typeValue, void *Value);
 typedef UNS32 (*storeODSubIndex_t)(CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
 UNS32 _storeODSubIndex (CO_Data* d, UNS16 wIndex, UNS8 bSubindex);
 
