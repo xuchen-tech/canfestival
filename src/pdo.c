@@ -193,7 +193,7 @@ proceedPDO (CO_Data * d, Message * m)
 
         if (offsetObjdict)
         {
-            for (UNS16 i = offsetObjdict; i <= lastIndex; ++i)
+            for (UNS16 i = offsetObjdict; i <= lastIndex; ++i, offsetObjdict ++)
             {
                 if (READ_UNS32(d->objdict, offsetObjdict, 1) == UNS16_LE(m->cob_id))
                 {
@@ -286,7 +286,7 @@ proceedPDO (CO_Data * d, Message * m)
                     numPdo++;
                     offsetObjdict++;
                     // status = state2;
-                    break;
+                    continue;
                 }
             }
 
