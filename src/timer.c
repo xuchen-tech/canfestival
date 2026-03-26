@@ -3,6 +3,24 @@ This file is part of CanFestival, a library implementing CanOpen Stack.
 
 Copyright (C): Edouard TISSERANT and Francis DUPIN
 
+
+/* Weak no-op stubs for CAN port registration helpers.
+ * Drivers in the lib may reference these symbols; the application may
+ * provide real implementations (strong symbols). Marking them weak here
+ * avoids unresolved symbol errors when linking the library. */
+void RegisterCanPortForCOData(void* d, void* port) __attribute__((weak));
+void UnregisterCanPortForCOData(void* d, void* port) __attribute__((weak));
+
+void RegisterCanPortForCOData(void* d, void* port)
+{
+    (void)d; (void)port;
+}
+
+void UnregisterCanPortForCOData(void* d, void* port)
+{
+    (void)d; (void)port;
+}
+/*
 See COPYING file for copyrights details.
 
 This library is free software; you can redistribute it and/or

@@ -124,10 +124,6 @@ void StartTimerLoop(TimerCallback_t init_callback)
     SetAlarm(NULL, 0, init_callback, 0, 0);
     LeaveMutex();
 }
-
-void canReceiveLoop_signal(int sig)
-{
-}
 /* We assume that ReceiveLoop_task_proc is always the same */
 static void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT) = NULL;
 
@@ -137,10 +133,7 @@ static void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT) = NULL;
  */
 void* unixtimer_canReceiveLoop(void* port)
 {
-    /*get signal*/
-      //  if(signal(SIGTERM, canReceiveLoop_signal) == SIG_ERR) {
-    //        perror("signal()");
-    //}
+        /* signal handling removed (unused) */
     unixtimer_ReceiveLoop_task_proc((CAN_PORT)port);
 
     return NULL;
