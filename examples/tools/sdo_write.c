@@ -63,6 +63,7 @@ int main(int argc, char** argv){
     UNS8 sub = (UNS8)strtol(argv[4], NULL, 16);
     UNS8 dtype = parse_type(argv[5]);
     const char* valStr = argv[6];
+    TimerContext timer_ctx;
     if(dtype == 0){ fprintf(stderr, "Unknown type: %s\n", argv[5]); usage(argv[0]); return 1; }
 
     // Parse value (hex or dec)
@@ -87,7 +88,7 @@ int main(int argc, char** argv){
 
     signal(SIGINT, on_sigint);
 
-    TimerInit();
+    TimerInit(&timer_ctx);
     setNodeId(d, 100);
     setState(d, Pre_operational);
     setState(d, Operational);

@@ -53,6 +53,7 @@ int main(int argc, char** argv){
     UNS16 index = (UNS16)strtol(argv[3], NULL, 16);
     UNS8 sub = (UNS8)strtol(argv[4], NULL, 16);
     UNS8 dtype = parse_type(argc > 5 ? argv[5] : NULL);
+    TimerContext timer_ctx;
 
     s_BOARD board = {0};
     board.busname = (char*)ifname;
@@ -73,7 +74,7 @@ int main(int argc, char** argv){
     signal(SIGINT, on_sigint);
 
     // Start timers (for timeouts) and set node state
-    TimerInit();
+    TimerInit(&timer_ctx);
     // Put master into Pre-operational and then Operational
     setNodeId(d, 100);
     setState(d, Pre_operational);

@@ -177,7 +177,7 @@ void SDOTimeoutAlarm(CO_Data* d, UNS32 id)
 
 #define StopSDO_TIMER(id) \
     MSG_WAR(0x3A05, "StopSDO_TIMER for line : ", line);\
-d->transfers[id].timer = DelAlarm(d->transfers[id].timer);
+d->transfers[id].timer = DelAlarm(d->transfers[id].timer, d->timer_ctx);
 
 #define StartSDO_TIMER(id) \
     MSG_WAR(0x3A06, "StartSDO_TIMER for line : ", line);\

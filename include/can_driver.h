@@ -30,7 +30,7 @@ typedef struct struct_s_BOARD s_BOARD;
 #include "applicfg.h"
 #include "can.h"
 #include "declaration.h"
-
+#include "timerscfg.h"
 /**
  * @brief The CAN board configuration
  * @ingroup can
@@ -45,6 +45,15 @@ struct struct_s_BOARD {
     const char * busname;  /**< The bus name on which the CAN board is connected */
     const char * baudrate; /**< The board baudrate */
 };
+
+/** CAN port structure */
+typedef struct {
+    char used;  /**< flag indicating CAN port usage, will be used to abort Receiver task*/
+    CAN_HANDLE fd; /**< CAN port file descriptor*/
+    TASK_HANDLE receiveTask; /**< CAN Receiver task*/
+    CO_Data* d; /**< CAN object data*/
+    void (*unixtimer_ReceiveLoop_task_proc)(CAN_PORT);
+} CANPort;
 
 #ifndef DLL_CALL
 #if !defined(WIN32) || defined(__CYGWIN__) || defined(__MINGW32__)

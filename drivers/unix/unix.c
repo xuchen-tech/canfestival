@@ -53,14 +53,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #define MAX_NB_CAN_PORTS 16
 
-/** CAN port structure */
-typedef struct {
-    char used;  /**< flag indicating CAN port usage, will be used to abort Receiver task*/
-    CAN_HANDLE fd; /**< CAN port file descriptor*/
-    TASK_HANDLE receiveTask; /**< CAN Receiver task*/
-    CO_Data* d; /**< CAN object data*/
-} CANPort;
-
 #include "can_driver.h"
 
 CANPort canports[MAX_NB_CAN_PORTS] = {{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,},{0,}};
@@ -147,9 +139,9 @@ void canReceiveLoop(CAN_PORT port)
         if (DLL_CALL(canReceive)(((CANPort*)port)->fd, &m) != 0)
             break;
 
-        EnterMutex();
+        EnterMutex(((CANPort*)port)->d->timer_ctx);
         canDispatch(((CANPort*)port)->d, &m);
-        LeaveMutex();
+        LeaveMutex(((CANPort*)port)->d->timer_ctx);
     }
 }
 

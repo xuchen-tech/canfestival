@@ -155,7 +155,7 @@ void proceedNODE_GUARD(CO_Data* d, Message* m )
                 {
                     TIMEVAL time = ( (d->ConsumerHeartbeatEntries[index]) & (UNS32)0x0000FFFF ) ;
                     /* Renew alarm for next heartbeat. */
-                    DelAlarm(d->ConsumerHeartBeatTimers[index]);
+                    DelAlarm(d->ConsumerHeartBeatTimers[index], d->timer_ctx);
                     d->ConsumerHeartBeatTimers[index] = SetAlarm(d, index, &ConsumerHeartbeatAlarm, MS_TO_TIMEVAL(time), 0);
                 }
             }
@@ -191,7 +191,7 @@ void ProducerHeartbeatAlarm(CO_Data* d, UNS32 id)
         canSend(d->canHandle,&msg );
 
     } else {
-        d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer);
+        d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer, d->timer_ctx);
     }
 }
 
@@ -249,7 +249,7 @@ void GuardTimeAlarm(CO_Data* d, UNS32 id)
     } 
     else 
     {
-        d->GuardTimeTimer = DelAlarm(d->GuardTimeTimer);
+        d->GuardTimeTimer = DelAlarm(d->GuardTimeTimer, d->timer_ctx);
     }
 }
 
@@ -286,7 +286,7 @@ UNS32 OnHeartbeatProducerUpdate(CO_Data* d, UNS16 unused_indextable, UNS8 unused
 {
     (void)unused_indextable;
     (void)unused_bSubindex;
-    d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer);
+    d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer, d->timer_ctx);
     if ( *d->ProducerHeartBeatTime )
     {
         TIMEVAL time = *d->ProducerHeartBeatTime;
@@ -347,15 +347,15 @@ void heartbeatStop(CO_Data* d)
     UNS8 index;
     for( index = (UNS8)0x00; index < *d->ConsumerHeartbeatCount; index++ )
     {
-        d->ConsumerHeartBeatTimers[index] = DelAlarm(d->ConsumerHeartBeatTimers[index]);
+        d->ConsumerHeartBeatTimers[index] = DelAlarm(d->ConsumerHeartBeatTimers[index], d->timer_ctx);
     }
 
-    d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer);
+    d->ProducerHeartBeatTimer = DelAlarm(d->ProducerHeartBeatTimer, d->timer_ctx);
 }
 
 void nodeguardStop(CO_Data* d)
 {
-    d->GuardTimeTimer = DelAlarm(d->GuardTimeTimer);
+    d->GuardTimeTimer = DelAlarm(d->GuardTimeTimer, d->timer_ctx);
 }
 
 

@@ -30,7 +30,7 @@ extern "C" {
 #include "timerscfg.h"
 #include "applicfg.h"
 #include "declaration.h"
-
+#include "config.h"
 
 #define TIMER_HANDLE INTEGER16
 
@@ -55,6 +55,20 @@ struct struct_s_timer_entry {
 
 typedef struct struct_s_timer_entry s_timer_entry;
 
+/* Per-instance timer context to support multiple masters/drivers without
+ * global timer state. Drivers may create one TimerContext per CAN port or
+ * per master and pass it to Ex APIs. */
+typedef struct TimerContext {
+    s_timer_entry timers[MAX_NB_TIMER];
+    TIMEVAL total_sleep_time;
+    TIMER_HANDLE last_timer_raw;
+    int timerfd; /* -1 when not used */
+    struct timeval last_sig;
+    pthread_mutex_t mutex;
+    pthread_t timer_tid;
+    int initialized;
+} TimerContext;
+
 /* ---------  prototypes --------- */
 /*#define SetAlarm(d, id, callback, value, period) printf("%s, %d, SetAlarm(%s, %s, %s, %s, %s)\n",__FILE__, __LINE__, #d, #id, #callback, #value, #period); _SetAlarm(d, id, callback, value, period)*/
 /**
@@ -75,23 +89,23 @@ TIMER_HANDLE SetAlarm(CO_Data* d, UNS32 id, TimerCallback_t callback, TIMEVAL va
  * @param handle A timer handle
  * @return The timer handle
  */
-TIMER_HANDLE DelAlarm(TIMER_HANDLE handle);
+TIMER_HANDLE DelAlarm(TIMER_HANDLE handle, TimerContext* timer_ctx);
 
-void TimeDispatch(void);
+void TimeDispatch(TimerContext* timer_ctx);
 
 /**
  * @ingroup timer
  * @brief Set a timerfor a given time.
  * @param value The time value.
  */
-void setTimer(TIMEVAL value);
+void setTimer(TIMEVAL value, TimerContext* timer_ctx);
 
 /**
  * @ingroup timer
  * @brief Get the time elapsed since latest timer occurence.
  * @return time elapsed since latest timer occurence
  */
-TIMEVAL getElapsedTime(void);
+TIMEVAL getElapsedTime(TimerContext* timer_ctx);
 
 #ifdef __cplusplus
 }

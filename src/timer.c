@@ -51,16 +51,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /* #define DEBUG_ERR_CONSOLE_ON */
 
 #include "timer.h"
+#include "data.h"
 #include "applicfg.h"
-#include "config.h"
-
-/*  ---------  The timer table --------- */
-s_timer_entry timers[MAX_NB_TIMER] = {{TIMER_FREE, NULL, NULL, 0, 0, 0},};
-
-TIMEVAL total_sleep_time = TIMEVAL_MAX;
-TIMER_HANDLE last_timer_raw = -1;
 
 #define min_val(a,b) ((a<b)?a:b)
+
+// function get TimerContext from CO_Data
+static TimerContext* get_timer_ctx(CO_Data* d)
+{
+    if (d->timer_ctx != NULL) {
+        return d->timer_ctx;
+    } else {
+        return NULL;
+    }
+}
 
 /*!
 ** -------  Use this to declare a new alarm ------
@@ -76,24 +80,30 @@ TIMER_HANDLE last_timer_raw = -1;
 TIMER_HANDLE SetAlarm(CO_Data* d, UNS32 id, TimerCallback_t callback, TIMEVAL value, TIMEVAL period)
 {
     TIMER_HANDLE row_number = 0;
-    s_timer_entry *row = timers;
+
+    TimerContext* timer_ctx = get_timer_ctx(d);
+    if (timer_ctx == NULL) {
+        printf("SetAlarm: no timer context available in CO_Data\n");
+        return TIMER_NONE;
+    }
+    s_timer_entry *row = timer_ctx->timers; /* get timer context from CO_Data */
 
     /* in order to decide new timer setting we have to run over all timer rows */
-    for(row_number = 0; row_number <= (last_timer_raw + 1) && row_number < MAX_NB_TIMER; ++row_number)
+    for(row_number = 0; row_number <= (timer_ctx->last_timer_raw + 1) && row_number < MAX_NB_TIMER; ++row_number)
     {
         if (callback &&     /* if something to store */
            row->state == TIMER_FREE) /* and empty row */
         {    /* just store */
             TIMEVAL real_timer_value = min_val(value, TIMEVAL_MAX);
-            TIMEVAL elapsed_time = getElapsedTime();
+            TIMEVAL elapsed_time = getElapsedTime(timer_ctx);
 
-            if (row_number == (last_timer_raw + 1)) { ++last_timer_raw; }
+            if (row_number == (timer_ctx->last_timer_raw + 1)) { ++timer_ctx->last_timer_raw; }
 
             /* set next wakeup alarm if new entry is sooner than others, or if it is alone */
-            if ( (total_sleep_time > elapsed_time) && (total_sleep_time - elapsed_time > real_timer_value) )
+            if ( (timer_ctx->total_sleep_time > elapsed_time) && (timer_ctx->total_sleep_time - elapsed_time > real_timer_value) )
             {
-                total_sleep_time = elapsed_time + real_timer_value;
-                setTimer(real_timer_value);
+                timer_ctx->total_sleep_time = elapsed_time + real_timer_value;
+                setTimer(real_timer_value, timer_ctx);
             }
 
             row->callback = callback;
@@ -119,18 +129,18 @@ TIMER_HANDLE SetAlarm(CO_Data* d, UNS32 id, TimerCallback_t callback, TIMEVAL va
 **
 ** @return
 **/
-TIMER_HANDLE DelAlarm(TIMER_HANDLE handle)
+TIMER_HANDLE DelAlarm(TIMER_HANDLE handle, TimerContext* timer_ctx)
 {
     /* Quick and dirty. system timer will continue to be trigged, but no action will be preformed. */
     MSG_WAR(0x3320, "DelAlarm. handle = ", handle);
     if(handle != TIMER_NONE)
     {
-        if(handle == last_timer_raw)
+        if(handle == timer_ctx->last_timer_raw)
         {
-            last_timer_raw--;
+            timer_ctx->last_timer_raw--;
         }
-        
-        timers[handle].state = TIMER_FREE;
+
+        timer_ctx->timers[handle].state = TIMER_FREE;
     }
     return TIMER_NONE;
 }
@@ -140,19 +150,19 @@ TIMER_HANDLE DelAlarm(TIMER_HANDLE handle)
 **
 **/
 int tdcount=0;
-void TimeDispatch(void)
+void TimeDispatch(TimerContext* timer_ctx)
 {
     TIMER_HANDLE i;
     TIMEVAL next_wakeup = TIMEVAL_MAX; /* used to compute when should normaly occur next wakeup */
     /* First run : change timer state depending on time */
     /* Get time since timer signal */
-    UNS32 overrun = (UNS32)getElapsedTime();
+    UNS32 overrun = (UNS32)getElapsedTime(timer_ctx);
 
-    TIMEVAL real_total_sleep_time = total_sleep_time + overrun;
+    TIMEVAL real_total_sleep_time = timer_ctx->total_sleep_time + overrun;
 
-    s_timer_entry *row = timers;
+    s_timer_entry *row = timer_ctx->timers;
 
-    for(i = 0; i <= last_timer_raw; i++)
+    for(i = 0; i <= timer_ctx->last_timer_raw; i++)
     {
         if (row->state & TIMER_ARMED) /* if row is active */
         {
@@ -192,14 +202,14 @@ void TimeDispatch(void)
     }
 
     /* Remember how much time we should sleep. */
-    total_sleep_time = next_wakeup;
+    timer_ctx->total_sleep_time = next_wakeup;
 
     /* Set timer to soonest occurence */
-    setTimer(next_wakeup);
+    setTimer(next_wakeup, timer_ctx);
 
     /* Then trig them or not. */
-    row = timers;
-    for(i = 0; i <= last_timer_raw; ++i)
+    row = timer_ctx->timers;
+    for(i = 0; i <= timer_ctx->last_timer_raw; ++i)
     {
         if (row->state & TIMER_TRIG)
         {

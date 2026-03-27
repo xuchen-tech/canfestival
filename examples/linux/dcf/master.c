@@ -114,6 +114,7 @@ void sortie(int sig)
 int main(int argc,char **argv)
 {
     struct sigaction act;
+    TimerContext timer_ctx;
 
     // register handler on SIGINT signal 
     act.sa_handler=sortie;
@@ -154,7 +155,7 @@ int main(int argc,char **argv)
         exit(1);
     }
 
-    TimerInit();
+    TimerInit(&timer_ctx);
     
     /* Put the master in Pre_operational mode, this will broadcast a comunication reset */
     setState(&masterdic_Data, Pre_operational);
@@ -169,7 +170,7 @@ int main(int argc,char **argv)
         bool fReadDone = FALSE;
         bool fWRDone = FALSE;
         
-        EnterMutex();
+        EnterMutex(&timer_ctx);
         printf("Slaves : counter 1 = %u, counter 2 = %u, counter 3 = %u\n",counter_1, counter_2, counter_3);
         position_1 += 1;
         position_2 += 2;
@@ -177,7 +178,7 @@ int main(int argc,char **argv)
         sendOnePDOevent(&masterdic_Data, 0);
         sendOnePDOevent(&masterdic_Data, 1);
         sendOnePDOevent(&masterdic_Data, 2);
-        LeaveMutex();
+        LeaveMutex(&timer_ctx);
 
         sleep(3);
         

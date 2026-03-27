@@ -93,6 +93,7 @@ int main(int argc,char **argv)
 {
     struct sigaction act;
     uint8_t nodeid = 2;
+    TimerContext timer_ctx;
 
     // register handler on SIGINT signal 
     act.sa_handler=sortie;
@@ -132,7 +133,7 @@ int main(int argc,char **argv)
         exit(1);
     }
 
-    TimerInit();
+    TimerInit(&timer_ctx);
     setNodeId(&slavedic_Data, nodeid);
     setState(&slavedic_Data, Initialisation);
 
@@ -141,9 +142,9 @@ int main(int argc,char **argv)
     while(Run)
     {
         sleep(1);
-        EnterMutex();
+        EnterMutex(&timer_ctx);
         counter += nodeid;
-        LeaveMutex();
+        LeaveMutex(&timer_ctx);
     }
 
     // Stop timer thread

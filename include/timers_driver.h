@@ -41,13 +41,13 @@ extern "C" {
  * @ingroup timer
  * @brief Acquire mutex
  */
-void EnterMutex(void);
+void EnterMutex(TimerContext* timer_ctx);
 
 /**
  * @ingroup timer
  * @brief Release mutex
  */
-void LeaveMutex(void);
+void LeaveMutex(TimerContext* timer_ctx);
 
 void WaitReceiveTaskEnd(TASK_HANDLE*);
 
@@ -55,13 +55,13 @@ void WaitReceiveTaskEnd(TASK_HANDLE*);
  * @ingroup timer
  * @brief Initialize Timer
  */
-void TimerInit(void);
+void TimerInit(TimerContext* timer_ctx);
 
 /**
  * @ingroup timer
  * @brief Cleanup Timer  
  */
-void TimerCleanup(void);
+void TimerCleanup(TimerContext* timer_ctx);
 
 /**
  * @ingroup timer

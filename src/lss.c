@@ -71,7 +71,7 @@ void LssAlarmSDELAY(CO_Data* d, UNS32 id);
 
 #define StopLSS_MSG_TIMER(){\
  MSG_WAR(0x3D01, "StopLSS_MSG_TIMER", 0);\
- d->lss_transfer.timerMSG = DelAlarm(d->lss_transfer.timerMSG);}
+ d->lss_transfer.timerMSG = DelAlarm(d->lss_transfer.timerMSG, d->timer_ctx);}
 
 #define StartLSS_MSG_TIMER(){\
  MSG_WAR(0x3D02, "StartLSS_MSG_TIMER",0);\
@@ -79,7 +79,7 @@ void LssAlarmSDELAY(CO_Data* d, UNS32 id);
  
 #define StopLSS_SDELAY_TIMER(){\
  MSG_WAR(0x3D03, "StopLSS_SDELAY_TIMER", 0);\
- d->lss_transfer.timerSDELAY = DelAlarm(d->lss_transfer.timerSDELAY);}
+ d->lss_transfer.timerSDELAY = DelAlarm(d->lss_transfer.timerSDELAY, d->timer_ctx);}
 
 #define StartLSS_SDELAY_TIMER(){\
  MSG_WAR(0x3D04, "StartLSS_SDELAY_TIMER",0);\
@@ -92,7 +92,7 @@ void LssAlarmFS(CO_Data* d, UNS32 id);
 
 #define StopLSS_FS_TIMER(){\
  MSG_WAR(0x3D05, "StopLSS_FS_TIMER", id);\
- d->lss_transfer.timerFS = DelAlarm(d->lss_transfer.timerFS);}
+ d->lss_transfer.timerFS = DelAlarm(d->lss_transfer.timerFS, d->timer_ctx);}
 
 #define StartLSS_FS_TIMER(){\
  MSG_WAR(0x3D06, "StartLSS_FS_TIMER",0);\

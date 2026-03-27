@@ -118,7 +118,7 @@ void stopSYNC(CO_Data* d)
 {
     RegisterSetODentryCallBack(d, 0x1005, 0, NULL);
     RegisterSetODentryCallBack(d, 0x1006, 0, NULL);
-    d->syncTimer = DelAlarm(d->syncTimer);
+    d->syncTimer = DelAlarm(d->syncTimer, d->timer_ctx);
 }
 
 
